@@ -2,14 +2,32 @@
 
 namespace Rollbar\Magento2\Plugin;
 
+use Magento\Framework\AppInterface;
+use Rollbar\Magento2\Helper\Data as DataHelper;
+use Rollbar\Rollbar;
+
 class InitPlugin
 {
-	public function beforeLaunch(\Magento\Framework\AppInterface $subject)
-	{
-		$objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-		$deploymentConfig = $objectManager->get(\Magento\Framework\App\DeploymentConfig::class); 
-		$rollbarConfig = $deploymentConfig->get('rollbar');
+    /**
+     * @var DataHelper
+     */
+    private $dataHelper;
 
-		\Rollbar\Rollbar::init($rollbarConfig);
-	}
+    public function __construct(
+        DataHelper $dataHelper
+    ) {
+        $this->dataHelper = $dataHelper;
+    }
+
+    public function beforeLaunch(AppInterface $subject)
+    {
+        if ($this->dataHelper->getEnabled() and $this->dataHelper->getAccessToken()) {
+            $rollbarConfig = [
+                'enabled' => $this->dataHelper->getEnabled(),
+                'access_token' => $this->dataHelper->getAccessToken(),
+                'environment' => $this->dataHelper->getEnvironment(),
+            ];
+            Rollbar::init($rollbarConfig);
+        }
+    }
 }
